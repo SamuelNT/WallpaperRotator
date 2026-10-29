@@ -5,10 +5,30 @@ scheduled invocation, applying the **same** image to **every** monitor.
 
 | | |
 | --- | --- |
-| Version | 1.0.0 |
+| Version | 1.0.1 |
 | Platform | Windows 11 (x64) |
 | Runtime | Python 3.11+ (standard library only) |
 | Status | Deployed and verified on this machine |
+
+---
+
+## AI disclosure
+
+This repository was produced with AI assistance. The application code
+(`rotator.py`, `tests/test_rotator.py`, `install-task.ps1`,
+`uninstall-task.ps1`) and this documentation were written by an AI coding agent
+running in OpenCode (model: DeepSeek V4.1 Flash Free), at the request and under
+the direction of the repository owner.
+
+The behaviour described in this document was verified on the target machine: the
+regression suite passes, both monitors were confirmed to report the same
+wallpaper after a rotation, and the registered task was inspected after
+installation. That evidence applies to this environment; it is not a guarantee
+for another one.
+
+AI-generated code can be wrong. Review it before relying on it, particularly
+before running it against different paths or on another Windows build. The
+software is provided without warranty.
 
 ---
 
@@ -598,4 +618,5 @@ version 1; an unknown version is discarded like any other malformed state.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.0.1 | 2026-10-29 | Documentation: added AI assistance disclosure. No functional changes. |
 | 1.0.0 | 2026-10-29 | Initial release: run-once rotator, shuffle-bag state, SPI + COM verification, scheduled-task installer, regression suite. |
