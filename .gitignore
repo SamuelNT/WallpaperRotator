@@ -1,0 +1,50 @@
+# --- Python bytecode and caches -------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments --------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# --- Test and coverage output ---------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# --- Build artifacts -------------------------------------------------------
+build/
+dist/
+*.egg-info/
+
+# --- Runtime data ----------------------------------------------------------
+# The rotator writes these under %LOCALAPPDATA%\WallpaperRotator, never in the
+# repository. Ignored here so a manual run with overridden paths cannot commit
+# them by accident.
+state.json
+state.json.tmp
+*.log
+rotator.log*
+
+# --- Editors and IDEs ------------------------------------------------------
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+
+# --- Operating system cruft ------------------------------------------------
+Thumbs.db
+Desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+*.lnk
+
+# --- Local overrides and secrets -------------------------------------------
+.env
+*.local
