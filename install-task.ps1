@@ -4,7 +4,9 @@
 
 .DESCRIPTION
     Creates a hidden scheduled task that runs pythonw.exe "<script>" --next at
-    logon and then every ROTATION_INTERVAL_MINUTES (read from rotator.py).
+    logon and then repeats every ROTATION_INTERVAL_MINUTES (read from
+    rotator.py). The repetition is anchored to the logon time, so signing in at
+    12:32 rotates at 12:32, 13:32, 14:32, and so on.
 
     Registers via Register-ScheduledTask and falls back to schtasks.exe when the
     CIM provider denies access. See README.md for the full task configuration
@@ -100,9 +102,6 @@ $user = "$env:USERDOMAIN\$env:USERNAME"
 $workDir = Split-Path -Parent $ScriptPath
 $arguments = '"{0}" --next' -f $ScriptPath
 
-# Repetition is anchored daily; the interval repeats indefinitely from there.
-$anchor = (Get-Date -Hour 0 -Minute 5 -Second 0).ToString("yyyy-MM-ddTHH:mm:ss")
-
 $taskXml = @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -112,20 +111,13 @@ $taskXml = @"
   </RegistrationInfo>
   <Triggers>
     <LogonTrigger>
-      <Enabled>true</Enabled>
-      <UserId>$user</UserId>
-    </LogonTrigger>
-    <CalendarTrigger>
-      <StartBoundary>$anchor</StartBoundary>
-      <Enabled>true</Enabled>
       <Repetition>
         <Interval>$IntervalIso</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
-      <ScheduleByDay>
-        <DaysInterval>1</DaysInterval>
-      </ScheduleByDay>
-    </CalendarTrigger>
+      <Enabled>true</Enabled>
+      <UserId>$user</UserId>
+    </LogonTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
@@ -204,6 +196,8 @@ Write-Host ("  ExecutionTimeLimit: {0}" -f $task.Settings.ExecutionTimeLimit)
 if ($RunNow) {
     Start-ScheduledTask -TaskName $TaskName
     Write-Host "Started the task once." -ForegroundColor Green
+} else {
+    Write-Host "Cadence starts at your next logon. Use -RunNow for an immediate rotation."
 }
 
 Write-Host ""

@@ -5,7 +5,7 @@ scheduled invocation, applying the **same** image to **every** monitor.
 
 | | |
 | --- | --- |
-| Version | 1.0.1 |
+| Version | 1.1.0 |
 | Platform | Windows 11 (x64) |
 | Runtime | Python 3.11+ (standard library only) |
 | Status | Deployed and verified on this machine |
@@ -54,7 +54,7 @@ software is provided without warranty.
 
 The built-in Windows wallpaper slideshow does not guarantee that two monitors
 show the same image at the same time. This tool replaces it with a deterministic
-rotation that changes both monitors together, once per hour.
+rotation that changes both monitors together at a logon-anchored interval.
 
 Each invocation of `rotator.py` performs exactly one step:
 
@@ -179,8 +179,7 @@ existing task is never silently replaced.
 | Setting | Value | Reason |
 | --- | --- | --- |
 | Action | `pythonw.exe "<path>\rotator.py" --next` | No console window. |
-| Trigger 1 | Logon | Immediate rotation when you sign in. |
-| Trigger 2 | Daily at 00:05, repeating indefinitely | Guarantees the interval is armed immediately. |
+| Trigger | Logon, repeating every `ROTATION_INTERVAL_MINUTES` indefinitely | Anchors the cadence to the moment you sign in. |
 | Logon type | Interactive token | Runs in your desktop session, where the wallpaper lives. |
 | Run level | Least privilege | No elevation needed. |
 | Multiple instances | `IgnoreNew` | Overlapping starts are discarded. |
@@ -189,12 +188,16 @@ existing task is never silently replaced.
 | Execution time limit | `PT0S` (unlimited) | Never terminated mid-run. |
 | Battery | Start allowed, no stop on switch | Laptops rotate normally. |
 
-> **Why two triggers.** A logon trigger only arms at the *next* logon. Registering
-> a logon-only task in an active session leaves `NextRunTime` empty, and nothing
-> rotates until the next reboot or sign-in. The daily trigger with an indefinite
-> repetition supplies the cadence from the moment the task is registered;
-> `StartWhenAvailable` covers missed starts. Verified: `NextRunTime` is populated
-> immediately after installation.
+> **Why the cadence is anchored to logon.** The repetition belongs to the logon
+> trigger, so its start time is the sign-in time, not a fixed wall-clock time.
+> Signing in at 12:32 rotates immediately and then at 13:32, 14:32, and so on;
+> signing in at 16:05 the next day rotates at 16:05, 17:05, and so on. Each new
+> logon re-anchors the sequence.
+>
+> Consequence: `NextRunTime` is empty while no logon trigger instance exists —
+> for example immediately after registering the task in an active session.
+> Nothing is broken; the cadence starts at the next sign-in. Use `-RunNow` or
+> `Start-ScheduledTask` for an immediate one-off rotation in the meantime.
 
 > **Elevation.** `Register-ScheduledTask` uses the CIM provider and can be denied
 > for a non-elevated shell (`0x80070005`). The installer falls back to
@@ -244,8 +247,9 @@ cd C:\Scripts\WallpaperRotator
 .\install-task.ps1 -RunNow         # install and rotate immediately
 ```
 
-Re-registering triggers an immediate rotation because the logon trigger fires
-when the task is registered in an active session. This is expected.
+Re-registering replaces the trigger but does not rotate immediately: the new
+cadence begins at your next logon. Use `-RunNow` (or `Start-ScheduledTask`) if
+you want a rotation right away.
 
 ### Run now
 
@@ -300,7 +304,7 @@ Get-Content "$env:LOCALAPPDATA\WallpaperRotator\state.json"
 
 ```text
 Task Scheduler
-      │  pythonw.exe rotator.py --next   (every 60 min, at logon)
+      │  pythonw.exe rotator.py --next   (at logon, then every interval)
       ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ main()                                                       │
@@ -547,7 +551,8 @@ The final line must read `OK: <n> image(s) per cycle, ... no repeats.`
 | Symptom | Likely cause | Action |
 | --- | --- | --- |
 | `LastTaskResult` is 1 | Script error (empty folder, API failure, state write) | Read `rotator.log`. |
-| Nothing rotates, `NextRunTime` empty | Task disabled or trigger not armed | `Get-ScheduledTask`; reinstall with `-Force`. |
+| Nothing rotates, `NextRunTime` empty | Expected until the next logon (logon-anchored schedule) | Sign out and back in; use `Start-ScheduledTask` for an immediate run. |
+| Rotation happens at an unexpected minute | Task was re-registered; cadence re-anchors at next logon | Log off and on to re-anchor to your sign-in time. |
 | Old wallpaper reappears | Another tool or the built-in slideshow is active | Set Background to a single picture; check other tasks. |
 | One monitor shows the old image | Per-monitor pin left by another tool | Re-run `--next`; the COM fallback should correct it. |
 | Log does not mention `via COM` but monitors differ | Verification unavailable (COM blocked) | Run `python .\rotator.py --next` manually and inspect. |
@@ -618,5 +623,6 @@ version 1; an unknown version is discarded like any other malformed state.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.1.0 | 2026-10-31 | Schedule anchored to logon: the repetition now belongs to the logon trigger, so the cadence starts at sign-in instead of a fixed daily time. |
 | 1.0.1 | 2026-10-29 | Documentation: added AI assistance disclosure. No functional changes. |
 | 1.0.0 | 2026-10-29 | Initial release: run-once rotator, shuffle-bag state, SPI + COM verification, scheduled-task installer, regression suite. |
